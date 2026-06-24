@@ -1,8 +1,3 @@
-/* GENERATED FILE — do not edit directly.
- * Source of truth is app.jsx; rebuild with: npm run build
- * JSX is compiled ahead of time to plain JS so the browser runs it
- * directly, with no Babel transpile step at load time.
- */
 /* Meditation Timer
  *
  * This is the JSX source of truth. It is compiled ahead of time to plain JS
@@ -17,12 +12,7 @@
  *   - Bells           : additive FM-ish chime for start and end of a session.
  */
 
-const {
-  useState,
-  useEffect,
-  useRef,
-  useCallback
-} = React;
+const { useState, useEffect, useRef, useCallback } = React;
 
 /* ------------------------------------------------------------------ */
 /* Audio engine                                                       */
@@ -32,9 +22,10 @@ class AudioEngine {
   constructor() {
     this.ctx = null;
     this.master = null;
-    this.nodes = []; // active source nodes for the current ambience
+    this.nodes = [];       // active source nodes for the current ambience
     this.volume = 0.6;
   }
+
   ensureContext() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -46,6 +37,7 @@ class AudioEngine {
     if (this.ctx.state === 'suspended') this.ctx.resume();
     return this.ctx;
   }
+
   setVolume(v) {
     this.volume = v;
     if (this.master) {
@@ -60,6 +52,7 @@ class AudioEngine {
     const length = ctx.sampleRate * seconds;
     const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
     const data = buffer.getChannelData(0);
+
     if (type === 'brown') {
       let last = 0;
       for (let i = 0; i < length; i++) {
@@ -70,11 +63,13 @@ class AudioEngine {
     } else {
       for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
     }
+
     const src = ctx.createBufferSource();
     src.buffer = buffer;
     src.loop = true;
     return src;
   }
+
   _fadeIn(gainNode, target, time = 1.2) {
     const now = this.ctx.currentTime;
     gainNode.gain.setValueAtTime(0.0001, now);
@@ -84,15 +79,14 @@ class AudioEngine {
   // Start a sound mode. Returns nothing; call stop() to tear down.
   start(mode, options) {
     this.ensureContext();
-    this.stop(); // never stack two ambiences
+    this.stop();           // never stack two ambiences
     const ctx = this.ctx;
+
     if (mode === 'binaural') {
-      const {
-        carrier = 200,
-        beat = 6
-      } = options;
+      const { carrier = 200, beat = 6 } = options;
       const merger = ctx.createChannelMerger(2);
       const gain = ctx.createGain();
+
       const left = ctx.createOscillator();
       const right = ctx.createOscillator();
       left.type = right.type = 'sine';
@@ -100,15 +94,15 @@ class AudioEngine {
       right.frequency.value = carrier + beat;
       left.connect(merger, 0, 0);
       right.connect(merger, 0, 1);
+
       merger.connect(gain).connect(this.master);
       this._fadeIn(gain, 0.5);
       left.start();
       right.start();
       this.nodes.push(left, right, gain, merger);
+
     } else if (mode === 'healing') {
-      const {
-        freq = 528
-      } = options;
+      const { freq = 528 } = options;
       const gain = ctx.createGain();
       // Fundamental + a quiet fifth for warmth.
       const osc = ctx.createOscillator();
@@ -119,6 +113,7 @@ class AudioEngine {
       osc2.frequency.value = freq * 1.5;
       const g2 = ctx.createGain();
       g2.gain.value = 0.25;
+
       osc.connect(gain);
       osc2.connect(g2).connect(gain);
       gain.connect(this.master);
@@ -126,12 +121,12 @@ class AudioEngine {
       osc.start();
       osc2.start();
       this.nodes.push(osc, osc2, g2, gain);
+
     } else if (mode === 'nature') {
-      const {
-        ambience = 'rain'
-      } = options;
+      const { ambience = 'rain' } = options;
       const gain = ctx.createGain();
       gain.connect(this.master);
+
       if (ambience === 'rain') {
         const src = this._noiseSource('white');
         const hp = ctx.createBiquadFilter();
@@ -144,6 +139,7 @@ class AudioEngine {
         src.start();
         this._fadeIn(gain, 0.7);
         this.nodes.push(src, hp, lp, gain);
+
       } else if (ambience === 'ocean') {
         const src = this._noiseSource('brown');
         const lp = ctx.createBiquadFilter();
@@ -160,8 +156,8 @@ class AudioEngine {
         lfo.start();
         this._fadeIn(gain, 1.5);
         this.nodes.push(src, lp, lfo, lfoGain, gain);
-      } else {
-        // wind
+
+      } else { // wind
         const src = this._noiseSource('white');
         const bp = ctx.createBiquadFilter();
         bp.type = 'bandpass';
@@ -187,23 +183,19 @@ class AudioEngine {
     const now = this.ctx.currentTime;
     const stopping = this.nodes;
     this.nodes = [];
-    stopping.forEach(n => {
+    stopping.forEach((n) => {
       if (n.gain) {
         try {
           n.gain.cancelScheduledValues(now);
           n.gain.setValueAtTime(Math.max(n.gain.value, 0.0001), now);
           n.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-        } catch (e) {/* not a gain node */}
+        } catch (e) { /* not a gain node */ }
       }
     });
     setTimeout(() => {
-      stopping.forEach(n => {
-        try {
-          if (n.stop) n.stop();
-        } catch (e) {}
-        try {
-          n.disconnect();
-        } catch (e) {}
+      stopping.forEach((n) => {
+        try { if (n.stop) n.stop(); } catch (e) {}
+        try { n.disconnect(); } catch (e) {}
       });
     }, 500);
   }
@@ -213,28 +205,13 @@ class AudioEngine {
     this.ensureContext();
     const ctx = this.ctx;
     const now = ctx.currentTime;
-    const partials = [{
-      f: 440,
-      g: 0.5,
-      d: 3.0
-    }, {
-      f: 660,
-      g: 0.3,
-      d: 2.4
-    }, {
-      f: 880,
-      g: 0.2,
-      d: 1.8
-    }, {
-      f: 1320,
-      g: 0.1,
-      d: 1.2
-    }];
-    partials.forEach(({
-      f,
-      g,
-      d
-    }) => {
+    const partials = [
+      { f: 440, g: 0.5, d: 3.0 },
+      { f: 660, g: 0.3, d: 2.4 },
+      { f: 880, g: 0.2, d: 1.8 },
+      { f: 1320, g: 0.1, d: 1.2 },
+    ];
+    partials.forEach(({ f, g, d }) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -253,78 +230,35 @@ class AudioEngine {
 /* Sound option metadata                                              */
 /* ------------------------------------------------------------------ */
 
-const BRAINWAVES = [{
-  id: 'delta',
-  label: 'Delta',
-  beat: 2.5,
-  desc: 'Deep sleep'
-}, {
-  id: 'theta',
-  label: 'Theta',
-  beat: 6,
-  desc: 'Meditation'
-}, {
-  id: 'alpha',
-  label: 'Alpha',
-  beat: 10,
-  desc: 'Relaxation'
-}, {
-  id: 'beta',
-  label: 'Beta',
-  beat: 18,
-  desc: 'Focus'
-}];
-const SOLFEGGIO = [{
-  id: 396,
-  label: '396 Hz',
-  desc: 'Release fear'
-}, {
-  id: 432,
-  label: '432 Hz',
-  desc: 'Harmony'
-}, {
-  id: 528,
-  label: '528 Hz',
-  desc: 'Transformation'
-}, {
-  id: 639,
-  label: '639 Hz',
-  desc: 'Connection'
-}, {
-  id: 741,
-  label: '741 Hz',
-  desc: 'Awakening'
-}, {
-  id: 852,
-  label: '852 Hz',
-  desc: 'Intuition'
-}];
-const AMBIENCES = [{
-  id: 'rain',
-  label: 'Rain',
-  icon: '🌧️'
-}, {
-  id: 'ocean',
-  label: 'Ocean',
-  icon: '🌊'
-}, {
-  id: 'wind',
-  label: 'Wind',
-  icon: '🍃'
-}];
-const SOUND_MODES = [{
-  id: 'off',
-  label: 'Silent'
-}, {
-  id: 'binaural',
-  label: 'Binaural'
-}, {
-  id: 'healing',
-  label: 'Healing'
-}, {
-  id: 'nature',
-  label: 'Nature'
-}];
+const BRAINWAVES = [
+  { id: 'delta', label: 'Delta', beat: 2.5, desc: 'Deep sleep' },
+  { id: 'theta', label: 'Theta', beat: 6, desc: 'Meditation' },
+  { id: 'alpha', label: 'Alpha', beat: 10, desc: 'Relaxation' },
+  { id: 'beta', label: 'Beta', beat: 18, desc: 'Focus' },
+];
+
+const SOLFEGGIO = [
+  { id: 396, label: '396 Hz', desc: 'Release fear' },
+  { id: 432, label: '432 Hz', desc: 'Harmony' },
+  { id: 528, label: '528 Hz', desc: 'Transformation' },
+  { id: 639, label: '639 Hz', desc: 'Connection' },
+  { id: 741, label: '741 Hz', desc: 'Awakening' },
+  { id: 852, label: '852 Hz', desc: 'Intuition' },
+];
+
+const AMBIENCES = [
+  { id: 'rain', label: 'Rain', icon: '🌧️' },
+  { id: 'ocean', label: 'Ocean', icon: '🌊' },
+  { id: 'wind', label: 'Wind', icon: '🍃' },
+];
+
+const SOUND_MODES = [
+  { id: 'off', label: 'Silent' },
+  { id: 'binaural', label: 'Binaural' },
+  { id: 'healing', label: 'Healing' },
+  { id: 'nature', label: 'Nature' },
+];
+
 const DURATIONS = [3, 5, 10, 15, 20, 30, 45, 60];
 
 /* ------------------------------------------------------------------ */
@@ -336,89 +270,78 @@ function formatTime(totalSeconds) {
   const s = totalSeconds % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
-function ProgressRing({
-  progress,
-  children
-}) {
+
+function ProgressRing({ progress, children }) {
   const size = 280;
   const stroke = 6;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress);
-  return /*#__PURE__*/React.createElement("div", {
-    className: "ring-wrap"
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: size,
-    height: size,
-    className: "ring"
-  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
-    id: "ringGrad",
-    x1: "0%",
-    y1: "0%",
-    x2: "100%",
-    y2: "100%"
-  }, /*#__PURE__*/React.createElement("stop", {
-    offset: "0%",
-    stopColor: "#34d399"
-  }), /*#__PURE__*/React.createElement("stop", {
-    offset: "100%",
-    stopColor: "#8b5cf6"
-  }))), /*#__PURE__*/React.createElement("circle", {
-    cx: size / 2,
-    cy: size / 2,
-    r: radius,
-    fill: "none",
-    stroke: "rgba(255,255,255,0.08)",
-    strokeWidth: stroke
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: size / 2,
-    cy: size / 2,
-    r: radius,
-    fill: "none",
-    stroke: "url(#ringGrad)",
-    strokeWidth: stroke,
-    strokeLinecap: "round",
-    strokeDasharray: circumference,
-    strokeDashoffset: offset,
-    transform: `rotate(-90 ${size / 2} ${size / 2})`,
-    style: {
-      transition: 'stroke-dashoffset 0.5s linear'
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "ring-center"
-  }, children));
+
+  return (
+    <div className="ring-wrap">
+      <svg width={size} height={size} className="ring">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="100%" stopColor="#8b5cf6" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none" stroke="url(#ringGrad)" strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: 'stroke-dashoffset 0.5s linear' }}
+        />
+      </svg>
+      <div className="ring-center">{children}</div>
+    </div>
+  );
 }
-function Segmented({
-  options,
-  value,
-  onChange,
-  getLabel
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: "segmented"
-  }, options.map(opt => {
-    const id = opt.id !== undefined ? opt.id : opt;
-    const label = getLabel ? getLabel(opt) : opt.label || opt;
-    return /*#__PURE__*/React.createElement("button", {
-      key: id,
-      className: 'seg-btn' + (id === value ? ' active' : ''),
-      onClick: () => onChange(id)
-    }, label);
-  }));
+
+function Segmented({ options, value, onChange, getLabel }) {
+  return (
+    <div className="segmented">
+      {options.map((opt) => {
+        const id = opt.id !== undefined ? opt.id : opt;
+        const label = getLabel ? getLabel(opt) : (opt.label || opt);
+        return (
+          <button
+            key={id}
+            className={'seg-btn' + (id === value ? ' active' : '')}
+            onClick={() => onChange(id)}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
+
 function App() {
   const engineRef = useRef(null);
   if (!engineRef.current) engineRef.current = new AudioEngine();
   const engine = engineRef.current;
-  const [duration, setDuration] = useState(10); // minutes
+
+  const [duration, setDuration] = useState(10);        // minutes
   const [remaining, setRemaining] = useState(10 * 60); // seconds
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
+
   const [soundMode, setSoundMode] = useState('nature');
   const [brainwave, setBrainwave] = useState('theta');
   const [solfeggio, setSolfeggio] = useState(528);
   const [ambience, setAmbience] = useState('rain');
   const [volume, setVolume] = useState(0.6);
+
   const intervalRef = useRef(null);
 
   // Keep the countdown in sync when the user changes the duration (and the
@@ -436,18 +359,11 @@ function App() {
 
   const optionsForMode = useCallback(() => {
     if (soundMode === 'binaural') {
-      const bw = BRAINWAVES.find(b => b.id === brainwave);
-      return {
-        carrier: 200,
-        beat: bw ? bw.beat : 6
-      };
+      const bw = BRAINWAVES.find((b) => b.id === brainwave);
+      return { carrier: 200, beat: bw ? bw.beat : 6 };
     }
-    if (soundMode === 'healing') return {
-      freq: solfeggio
-    };
-    if (soundMode === 'nature') return {
-      ambience
-    };
+    if (soundMode === 'healing') return { freq: solfeggio };
+    if (soundMode === 'nature') return { ambience };
     return {};
   }, [soundMode, brainwave, solfeggio, ambience]);
 
@@ -462,7 +378,7 @@ function App() {
   }, [soundMode, brainwave, solfeggio, ambience]); // eslint-disable-line
 
   const tick = useCallback(() => {
-    setRemaining(r => {
+    setRemaining((r) => {
       if (r <= 1) {
         clearInterval(intervalRef.current);
         setRunning(false);
@@ -474,6 +390,7 @@ function App() {
       return r - 1;
     });
   }, [engine]);
+
   const start = () => {
     engine.ensureContext();
     if (finished || remaining === 0) {
@@ -488,11 +405,13 @@ function App() {
     setRunning(true);
     intervalRef.current = setInterval(tick, 1000);
   };
+
   const pause = () => {
     clearInterval(intervalRef.current);
     setRunning(false);
     engine.stop();
   };
+
   const reset = () => {
     clearInterval(intervalRef.current);
     setRunning(false);
@@ -500,6 +419,7 @@ function App() {
     setRemaining(duration * 60);
     engine.stop();
   };
+
   useEffect(() => () => {
     clearInterval(intervalRef.current);
     engine.stop();
@@ -507,86 +427,100 @@ function App() {
 
   const total = duration * 60;
   const progress = total > 0 ? (total - remaining) / total : 0;
-  return /*#__PURE__*/React.createElement("div", {
-    className: "app"
-  }, /*#__PURE__*/React.createElement("header", {
-    className: "header"
-  }, /*#__PURE__*/React.createElement("h1", null, "Meditation"), /*#__PURE__*/React.createElement("p", {
-    className: "subtitle"
-  }, "Breathe. Be still. Begin.")), /*#__PURE__*/React.createElement(ProgressRing, {
-    progress: progress
-  }, /*#__PURE__*/React.createElement("div", {
-    className: 'time' + (running ? ' pulsing' : '')
-  }, formatTime(remaining)), /*#__PURE__*/React.createElement("div", {
-    className: "time-label"
-  }, finished ? 'Complete' : running ? 'remaining' : `${duration} min`)), /*#__PURE__*/React.createElement("div", {
-    className: "controls"
-  }, !running ? /*#__PURE__*/React.createElement("button", {
-    className: "btn primary",
-    onClick: start
-  }, finished ? 'Again' : remaining < total ? 'Resume' : 'Begin') : /*#__PURE__*/React.createElement("button", {
-    className: "btn",
-    onClick: pause
-  }, "Pause"), /*#__PURE__*/React.createElement("button", {
-    className: "btn ghost",
-    onClick: reset
-  }, "Reset")), /*#__PURE__*/React.createElement("section", {
-    className: "panel"
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "panel-label"
-  }, "Duration"), /*#__PURE__*/React.createElement(Segmented, {
-    options: DURATIONS,
-    value: duration,
-    onChange: d => !running && setDuration(d),
-    getLabel: d => `${d}`
-  })), /*#__PURE__*/React.createElement("section", {
-    className: "panel"
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "panel-label"
-  }, "Sound"), /*#__PURE__*/React.createElement(Segmented, {
-    options: SOUND_MODES,
-    value: soundMode,
-    onChange: setSoundMode
-  }), soundMode === 'binaural' && /*#__PURE__*/React.createElement("div", {
-    className: "sub"
-  }, /*#__PURE__*/React.createElement(Segmented, {
-    options: BRAINWAVES,
-    value: brainwave,
-    onChange: setBrainwave,
-    getLabel: b => b.label
-  }), /*#__PURE__*/React.createElement("p", {
-    className: "hint"
-  }, BRAINWAVES.find(b => b.id === brainwave).desc, " \xB7", ' ', BRAINWAVES.find(b => b.id === brainwave).beat, " Hz beat \xB7", ' ', "use headphones")), soundMode === 'healing' && /*#__PURE__*/React.createElement("div", {
-    className: "sub"
-  }, /*#__PURE__*/React.createElement(Segmented, {
-    options: SOLFEGGIO,
-    value: solfeggio,
-    onChange: setSolfeggio,
-    getLabel: s => s.label
-  }), /*#__PURE__*/React.createElement("p", {
-    className: "hint"
-  }, SOLFEGGIO.find(s => s.id === solfeggio).desc)), soundMode === 'nature' && /*#__PURE__*/React.createElement("div", {
-    className: "sub"
-  }, /*#__PURE__*/React.createElement(Segmented, {
-    options: AMBIENCES,
-    value: ambience,
-    onChange: setAmbience,
-    getLabel: a => `${a.icon} ${a.label}`
-  }))), /*#__PURE__*/React.createElement("section", {
-    className: "panel"
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "panel-label"
-  }, "Volume"), /*#__PURE__*/React.createElement("input", {
-    type: "range",
-    min: "0",
-    max: "1",
-    step: "0.01",
-    value: volume,
-    className: "slider",
-    onChange: e => setVolume(parseFloat(e.target.value))
-  })), /*#__PURE__*/React.createElement("footer", {
-    className: "footer"
-  }, "All sounds generated live \xB7 works offline"));
+
+  return (
+    <div className="app">
+      <header className="header">
+        <h1>Meditation</h1>
+        <p className="subtitle">Breathe. Be still. Begin.</p>
+      </header>
+
+      <ProgressRing progress={progress}>
+        <div className={'time' + (running ? ' pulsing' : '')}>
+          {formatTime(remaining)}
+        </div>
+        <div className="time-label">
+          {finished ? 'Complete' : running ? 'remaining' : `${duration} min`}
+        </div>
+      </ProgressRing>
+
+      <div className="controls">
+        {!running ? (
+          <button className="btn primary" onClick={start}>
+            {finished ? 'Again' : remaining < total ? 'Resume' : 'Begin'}
+          </button>
+        ) : (
+          <button className="btn" onClick={pause}>Pause</button>
+        )}
+        <button className="btn ghost" onClick={reset}>Reset</button>
+      </div>
+
+      <section className="panel">
+        <label className="panel-label">Duration</label>
+        <Segmented
+          options={DURATIONS}
+          value={duration}
+          onChange={(d) => !running && setDuration(d)}
+          getLabel={(d) => `${d}`}
+        />
+      </section>
+
+      <section className="panel">
+        <label className="panel-label">Sound</label>
+        <Segmented options={SOUND_MODES} value={soundMode} onChange={setSoundMode} />
+
+        {soundMode === 'binaural' && (
+          <div className="sub">
+            <Segmented
+              options={BRAINWAVES}
+              value={brainwave}
+              onChange={setBrainwave}
+              getLabel={(b) => b.label}
+            />
+            <p className="hint">
+              {BRAINWAVES.find((b) => b.id === brainwave).desc} ·{' '}
+              {BRAINWAVES.find((b) => b.id === brainwave).beat} Hz beat ·
+              {' '}use headphones
+            </p>
+          </div>
+        )}
+
+        {soundMode === 'healing' && (
+          <div className="sub">
+            <Segmented
+              options={SOLFEGGIO}
+              value={solfeggio}
+              onChange={setSolfeggio}
+              getLabel={(s) => s.label}
+            />
+            <p className="hint">{SOLFEGGIO.find((s) => s.id === solfeggio).desc}</p>
+          </div>
+        )}
+
+        {soundMode === 'nature' && (
+          <div className="sub">
+            <Segmented
+              options={AMBIENCES}
+              value={ambience}
+              onChange={setAmbience}
+              getLabel={(a) => `${a.icon} ${a.label}`}
+            />
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <label className="panel-label">Volume</label>
+        <input
+          type="range" min="0" max="1" step="0.01" value={volume}
+          className="slider"
+          onChange={(e) => setVolume(parseFloat(e.target.value))}
+        />
+      </section>
+
+      <footer className="footer">All sounds generated live · works offline</footer>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -696,8 +630,10 @@ const STYLE = `
   }
   .footer { color: #50506a; font-size: 12px; margin-top: 8px; text-align: center; }
 `;
+
 const styleTag = document.createElement('style');
 styleTag.textContent = STYLE;
 document.head.appendChild(styleTag);
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(/*#__PURE__*/React.createElement(App, null));
+root.render(<App />);
