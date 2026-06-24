@@ -5,7 +5,7 @@
  * opportunistically as they are fetched.
  */
 
-const CACHE = 'meditation-timer-v1';
+const CACHE = 'meditation-timer-v2';
 
 const APP_SHELL = [
   './',

@@ -74,8 +74,40 @@
   <!-- React and ReactDOM from CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
+
+  <!-- Load-failure fallback: if the app hasn't mounted shortly after load,
+       replace the spinner with an actionable message instead of spinning
+       forever (e.g. offline, blocked CDN, or a script error). -->
+  <script>
+    window.addEventListener('error', function (e) {
+      var root = document.getElementById('root');
+      if (root && root.querySelector('.loading')) {
+        root.innerHTML =
+          '<div style="min-height:100vh;display:flex;align-items:center;' +
+          'justify-content:center;padding:24px;text-align:center;color:#e8e8f0;' +
+          'font-family:sans-serif"><div><h2 style="font-weight:600">' +
+          'Could not load the app</h2><p style="color:#8a8aa0;margin-top:8px">' +
+          (e && e.message ? e.message : 'A script failed to load.') +
+          '</p><p style="color:#8a8aa0;margin-top:8px">Check your connection ' +
+          'and reload.</p></div></div>';
+      }
+    });
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var root = document.getElementById('root');
+        if (root && root.querySelector('.loading')) {
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;align-items:center;' +
+            'justify-content:center;padding:24px;text-align:center;color:#e8e8f0;' +
+            'font-family:sans-serif"><div><h2 style="font-weight:600">' +
+            'Still loading…</h2><p style="color:#8a8aa0;margin-top:8px">The app ' +
+            'did not start. If you opened this file directly, serve it over ' +
+            'http instead, or check your connection and reload.</p></div></div>';
+        }
+      }, 8000);
+    });
+  </script>
+
   <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
@@ -87,7 +119,7 @@
     }
   </script>
   
-  <!-- App -->
-  <script type="text/babel" src="./app.js"></script>
+  <!-- App (pre-compiled plain JS; no runtime Babel needed) -->
+  <script src="./app.js"></script>
 </body>
 </html>
