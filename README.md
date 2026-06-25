@@ -42,8 +42,14 @@ npm run build # compiles app.jsx -> app.js
 | `app.js` | Compiled output (generated — do not edit by hand) |
 | `build.mjs` | Compiles `app.jsx` → `app.js` |
 | `manifest.json` | PWA manifest |
-| `service-worker.js` | Offline app-shell caching |
+| `service-worker.js` | Offline app-shell caching (network-first navigation) |
+| `vendor/` | React + ReactDOM UMD builds (vendored — no CDN needed) |
 | `favicon.svg`, `icon-192.png`, `icon-512.png` | Icons |
+
+React is vendored locally in `vendor/` so the app has **no runtime CDN
+dependency** and works fully offline. To refresh those builds, run
+`npm install` and copy `node_modules/react{,-dom}/umd/*.production.min.js`
+into `vendor/`.
 
 ## Sounds
 

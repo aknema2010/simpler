@@ -71,9 +71,10 @@
     </div>
   </div>
 
-  <!-- React and ReactDOM from CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- React and ReactDOM (vendored locally so the app needs no CDN and
+       works fully offline) -->
+  <script src="./vendor/react.production.min.js"></script>
+  <script src="./vendor/react-dom.production.min.js"></script>
 
   <!-- Load-failure fallback: if the app hasn't mounted shortly after load,
        replace the spinner with an actionable message instead of spinning
